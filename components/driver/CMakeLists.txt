@@ -215,7 +215,7 @@ else()
     idf_component_register(SRCS "${srcs}"
                         INCLUDE_DIRS ${includes}
                         PRIV_REQUIRES efuse esp_timer
-                        REQUIRES esp_pm esp_ringbuf freertos soc hal esp_hw_support
+                        REQUIRES esp_pm esp_ringbuf freertos soc hal esp_hw_support fatfs
                         LDFRAGMENTS linker.lf gptimer/linker.lf)
 endif()
 

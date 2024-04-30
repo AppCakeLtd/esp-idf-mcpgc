@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
+#include "ff.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -212,6 +213,7 @@ typedef struct {
     uint32_t log_bus_width : 2; /*!< log2(bus width supported by card) */
     uint32_t is_ddr : 1;        /*!< Card supports DDR mode */
     uint32_t reserved : 23;     /*!< Reserved for future expansion */
+    FATFS *fs;
 } sdmmc_card_t;
 
 /**

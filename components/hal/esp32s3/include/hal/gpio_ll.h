@@ -495,7 +495,7 @@ static inline void gpio_ll_hold_dis(gpio_dev_t *hw, uint32_t gpio_num)
 __attribute__((always_inline))
 static inline bool gpio_ll_is_digital_io_hold(gpio_dev_t *hw, uint32_t gpio_num)
 {
-    return GET_PERI_REG_MASK(RTC_CNTL_DIG_PAD_HOLD_REG, BIT(gpio_num - 21));
+    return GET_PERI_REG_MASK(RTC_CNTL_DIG_PAD_HOLD_REG, BIT((gpio_num - 21)));
 }
 
 /**

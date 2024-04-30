@@ -171,6 +171,7 @@ static esp_err_t mount_to_vfs_fat(const esp_vfs_fat_mount_config_t *mount_config
     if (err != ESP_OK) {
         goto fail;
     }
+    card->fs = fs;
     return ESP_OK;
 
 fail:

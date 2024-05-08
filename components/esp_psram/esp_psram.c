@@ -71,6 +71,10 @@ typedef struct {
     size_t size;        //in bytes
 } psram_mem_t;
 
+// <MOD>
+static uint32_t cachedPSRAMAddr = 0;
+// </MOD>
+
 typedef struct {
     bool is_initialised;
     /**
@@ -115,6 +119,13 @@ static void IRAM_ATTR s_mapping(int v_start, int size)
 }
 #endif  //CONFIG_IDF_TARGET_ESP32
 
+// <MOD>
+uint32_t GetPSRAMStartAddr(){
+
+    return cachedPSRAMAddr;
+
+}
+// </MOD?
 
 esp_err_t esp_psram_init(void)
 {
@@ -219,6 +230,11 @@ esp_err_t esp_psram_init(void)
     cache_ll_l1_enable_bus(1, bus_mask);
 #endif
 #endif  //#if CONFIG_IDF_TARGET_ESP32
+
+    // <MOD>
+    //esp_rom_printf("_____TEST_____ 8bit-aligned-region: start is 0x%lx bytes\n", (uint32_t)v_start_8bit_aligned);
+    cachedPSRAMAddr = (uint32_t)v_start_8bit_aligned;
+    // </MOD>
 
     s_psram_ctx.mapped_regions[PSRAM_MEM_8BIT_ALIGNED].size = size_to_map;
     s_psram_ctx.mapped_regions[PSRAM_MEM_8BIT_ALIGNED].vaddr_start = (intptr_t)v_start_8bit_aligned;

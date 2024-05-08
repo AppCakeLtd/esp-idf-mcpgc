@@ -42,6 +42,16 @@ bool esp_psram_is_initialized(void);
  */
 size_t esp_psram_get_size(void);
 
+
+// <MOD>
+/**
+ * @brief returns the start of the psram addr range
+ * 
+ * @return uint32_t 
+ */
+uint32_t GetPSRAMStartAddr();
+// </MOD>
+
 #ifdef __cplusplus
 }
 #endif

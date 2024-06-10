@@ -567,6 +567,7 @@ esp_err_t SpiSlaveInitLite(spi_host_device_t host, const spi_bus_config_t *bus_c
     localIntrFlags = inIntrFlags;
 
     bool spi_chan_claimed;
+    
     uint32_t actual_tx_dma_chan = 0;
     uint32_t actual_rx_dma_chan = 0;
     esp_err_t ret = ESP_OK;
@@ -600,6 +601,7 @@ esp_err_t SpiSlaveInitLite(spi_host_device_t host, const spi_bus_config_t *bus_c
             goto cleanup;
         }
     }
+    printf("SPI Slave %ld using DMA channelels tx=%ld and rx=%lx\n", (uint32_t)host, actual_tx_dma_chan, actual_rx_dma_chan);
 
     err = spicommon_bus_initialize_io(host, bus_config, SPICOMMON_BUSFLAG_SLAVE|bus_config->flags, &spihost[host]->flags);
     if (err!=ESP_OK) {
@@ -802,8 +804,8 @@ static IRAM_ATTR void QuickLink_Chunked(lldesc_t *dmadesc, const void *data, int
 
 
 // cached inlink and outlink values
-static uint32_t outLink = 0; 
-static uint32_t inLink = 0;
+static uint32_t outLink[3] = {0}; 
+static uint32_t inLink[3] = {0};
 //static uint32_t pickle = 0;
 
 // Setup sequence derived from "prepare_data"
@@ -839,7 +841,7 @@ void SpiSlaveInitBuffersLite( uint32_t whichHost, uint8_t * txBuffer, uint8_t * 
     GDMA.channel[rxChan].in.link.addr = &hal->dmadesc_rx[0];
     GDMA.channel[rxChan].in.link.start = 1;
     printf( "initial inlink %lx\n", GDMA.channel[rxChan].in.link.val );
-    inLink = GDMA.channel[rxChan].in.link.val | (1<<22);
+    inLink[whichHost] = GDMA.channel[rxChan].in.link.val | (1<<22);
     
     //lldesc_setup_link(hal->dmadesc_tx, hal->tx_buffer, (hal->bitlen  7) / 8, false);
     QuickLink_Chunked(hal->dmadesc_tx, hal->tx_buffer, inLength, false);
@@ -849,7 +851,7 @@ void SpiSlaveInitBuffersLite( uint32_t whichHost, uint8_t * txBuffer, uint8_t * 
     GDMA.channel[txChan].out.link.addr = (&hal->dmadesc_tx[0]);
     GDMA.channel[txChan].out.link.start = 1;
     printf( "initial outlink %lx\n", GDMA.channel[txChan].out.link.val );
-    outLink = GDMA.channel[txChan].out.link.val | (1<<21);
+    outLink[whichHost] = GDMA.channel[txChan].out.link.val | (1<<21);
 
 
     // on the hal side of things
@@ -928,7 +930,7 @@ IRAM_ATTR void SpiSlaveSendLite( uint32_t whichHost ){
             // original // gdma_ll_rx_start(&GDMA, hal->rx_dma_chan);
             //GDMA.channel[rxChan].in.link.start = 1;
             //ets_printf( "inlink %x\n", GDMA.channel[rxChan].in.link.val );
-            GDMA.channel[activeRxChan].in.link.val = inLink;
+            GDMA.channel[activeRxChan].in.link.val = inLink[whichHost];
 
             
         //}
@@ -978,7 +980,7 @@ IRAM_ATTR void SpiSlaveSendLite( uint32_t whichHost ){
             // original // gdma_ll_tx_start(&GDMA, hal->tx_dma_chan);
             //ets_printf( "outlink %x\n", GDMA.channel[txChan].out.link.val );
             //GDMA.channel[txChan].out.link.start = 1;
-            GDMA.channel[activeTxChan].out.link.val = outLink;
+            GDMA.channel[activeTxChan].out.link.val = outLink[whichHost];
             
 
         //}
@@ -1096,7 +1098,7 @@ IRAM_ATTR void QuickReset( uint32_t whichHost ){
             // original // gdma_ll_rx_start(&GDMA, hal->rx_dma_chan);
             //GDMA.channel[rxChan].in.link.start = 1;
             //ets_printf( "inlink %x\n", GDMA.channel[rxChan].in.link.val );
-            GDMA.channel[activeRxChan].in.link.val = inLink;
+            GDMA.channel[activeRxChan].in.link.val = inLink[whichHost];
 
             
         //}
@@ -1148,7 +1150,7 @@ IRAM_ATTR void QuickReset( uint32_t whichHost ){
             // original // gdma_ll_tx_start(&GDMA, hal->tx_dma_chan);
             //ets_printf( "outlink %x\n", GDMA.channel[txChan].out.link.val );
             //GDMA.channel[txChan].out.link.start = 1;
-            GDMA.channel[activeTxChan].out.link.val = outLink;
+            GDMA.channel[activeTxChan].out.link.val = outLink[whichHost];
             
 
         //}

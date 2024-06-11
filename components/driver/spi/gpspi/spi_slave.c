@@ -1194,6 +1194,9 @@ void CacheValues_HOST2(){
 // See QuickReset for a list of changes from the original version
 IRAM_ATTR void QuickReset_HOST2(){
 
+    QuickReset(SPI2_HOST);
+    return;
+
     GDMA.channel[rxChan_host2].in.conf0.val = 0b0;
 
     hal_host2->dma_in->dma_int_clr.val = 0xFFFFFFFF;

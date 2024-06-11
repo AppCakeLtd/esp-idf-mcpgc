@@ -1182,32 +1182,69 @@ static spi_slave_hal_context_t * hal_host2 = NULL;
 static uint32_t rxChan_host2 = 0;
 static uint32_t txChan_host2 = 0;
 
+static uint32_t * gdma_channel_rxchan_host2_in_conf0_val = NULL;
+static uint32_t * hal_host2_dma_in_dma_int_clr_val = NULL;
+static uint32_t * gdma_channel_rxchan_host2_in_link_val = NULL;
+
+static uint32_t * gdma_channel_txchan_host2_out_conf0_val = NULL;
+
+static uint32_t * gdma_channel_txchan_host2_out_link_val = NULL;
+static uint32_t * hal_host2_dma_out_dma_conf_val = NULL;
 
 void CacheValues_HOST2(){
     printf("__TEST__Caching values for SPI2 host\n");
     hal_host2 = &spihost[SPI2_HOST]->hal;
     rxChan_host2 = hal_host2->rx_dma_chan;
     txChan_host2 = hal_host2->tx_dma_chan;
+
+    // for quickreset
+
+    gdma_channel_rxchan_host2_in_conf0_val = &GDMA.channel[rxChan_host2].in.conf0.val;
+    hal_host2_dma_in_dma_int_clr_val = &hal_host2->dma_in->dma_int_clr.val;
+    gdma_channel_rxchan_host2_in_link_val = &GDMA.channel[rxChan_host2].in.link.val;
+
+    gdma_channel_txchan_host2_out_conf0_val = GDMA.channel[txChan_host2].out.conf0.val;
+
+    gdma_channel_txchan_host2_out_link_val = &GDMA.channel[txChan_host2].out.link.val;
+    hal_host2_dma_out_dma_conf_val = &hal_host2->dma_out->dma_conf.val;
+
 }
 
 // overkill but it avoids us having to do a bunch of array lookups
 // See QuickReset for a list of changes from the original version
 IRAM_ATTR void QuickReset_HOST2(){
 
-    // QuickReset(SPI2_HOST);
-    // return;
+    // 1.65 on the first, 1.09 on the second
+    //QuickReset(SPI2_HOST);
+    //return;
 
-    GDMA.channel[rxChan_host2].in.conf0.val = 0b0;
 
-    hal_host2->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    
+    // 1.61 on the first one 104 with IRAM_ATTR + shortcuts
+    // 1.65 vs 1.09 with IRAM_ATTR and no shortcuts    
+    // 1.52 vs 840ns with IRAM_ATTR and no TX stuff at all since HOST2 doesn't use that
+        
+    //GDMA.channel[rxChan_host2].in.conf0.val = 0b0;
+    *gdma_channel_rxchan_host2_in_conf0_val = 0b0;
+
+    //hal_host2->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    *hal_host2_dma_in_dma_int_clr_val = 0xFFFFFFFF;
+
     GDMA.channel[rxChan_host2].in.link.val = inLink[SPI2_HOST];
+    //*gdma_channel_rxchan_host2_in_link_val = inLink[SPI2_HOST];
 
 
-    GDMA.channel[txChan_host2].out.conf0.val = 0b111001; // reset
-    GDMA.channel[txChan_host2].out.conf0.val = 0b111000; // unreset
+    //GDMA.channel[txChan_host2].out.conf0.val = 0b111001; // reset
+    //*gdma_channel_txchan_host2_out_conf0_val = 0b111001; // reset
 
-    GDMA.channel[txChan_host2].out.link.val = outLink[SPI2_HOST];
-    hal_host2->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    //GDMA.channel[txChan_host2].out.conf0.val = 0b111000; // unreset
+    //*gdma_channel_txchan_host2_out_conf0_val = 0b111000; // unreset
+
+    //GDMA.channel[txChan_host2].out.link.val = outLink[SPI2_HOST];
+    //*gdma_channel_txchan_host2_out_link_val = outLink[SPI2_HOST];
+
+    //hal_host2->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    //*hal_host2_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
 
 }

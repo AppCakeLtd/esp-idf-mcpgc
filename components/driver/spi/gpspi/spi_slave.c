@@ -756,12 +756,6 @@ esp_err_t SpiSlaveInitLite(spi_host_device_t host, const spi_bus_config_t *bus_c
 
     spi_slave_hal_setup_device(hal);
 
-
-    // Might have to go in the buffers
-    if ( host == SPI2_HOST ){
-        CacheValues_HOST2();
-    }
-
     return ESP_OK;
 
 cleanup:
@@ -939,6 +933,12 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     // note: will fail if SetTrans hasn't happened
     // spihost[whichHost]->cur_trans->rxBuffer;
     // spihost[whichHost]->cur_trans->txBuffer;
+
+    // Might have to go in the buffers
+    if ( whichHost == SPI2_HOST ){
+        CacheValues_HOST2();
+    }
+
 }
 
 // This is largely taken from spi_slave_hal_iram.c's prepare_data() function
@@ -1194,8 +1194,8 @@ void CacheValues_HOST2(){
 // See QuickReset for a list of changes from the original version
 IRAM_ATTR void QuickReset_HOST2(){
 
-    QuickReset(SPI2_HOST);
-    return;
+    // QuickReset(SPI2_HOST);
+    // return;
 
     GDMA.channel[rxChan_host2].in.conf0.val = 0b0;
 

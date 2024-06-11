@@ -1223,7 +1223,7 @@ void CacheValues_HOST2(){
     hal_host2_dma_in_dma_int_clr_val = &hal_host2->dma_in->dma_int_clr.val;
     gdma_channel_rxchan_host2_in_link_val = &GDMA.channel[rxChan_host2].in.link.val;
 
-    gdma_channel_txchan_host2_out_conf0_val = GDMA.channel[txChan_host2].out.conf0.val;
+    gdma_channel_txchan_host2_out_conf0_val = &GDMA.channel[txChan_host2].out.conf0.val;
 
     gdma_channel_txchan_host2_out_link_val = &GDMA.channel[txChan_host2].out.link.val;
     hal_host2_dma_out_dma_conf_val = &hal_host2->dma_out->dma_conf.val;
@@ -1248,7 +1248,7 @@ void CacheValues_HOST3(){
     hal_host3_dma_in_dma_int_clr_val = &hal_host3->dma_in->dma_int_clr.val;
     gdma_channel_rxchan_host3_in_link_val = &GDMA.channel[rxChan_host3].in.link.val;
 
-    gdma_channel_txchan_host3_out_conf0_val = GDMA.channel[txChan_host3].out.conf0.val;
+    gdma_channel_txchan_host3_out_conf0_val = &GDMA.channel[txChan_host3].out.conf0.val;
 
     gdma_channel_txchan_host3_out_link_val = &GDMA.channel[txChan_host3].out.link.val;
     hal_host3_dma_out_dma_conf_val = &hal_host3->dma_out->dma_conf.val;
@@ -1309,8 +1309,8 @@ IRAM_ATTR void QuickReset_HOST3(){
     //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     *hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
-    GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[SPI3_HOST];
-    //*gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
+    //GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[SPI3_HOST];
+    *gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
 
 
     GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
@@ -1319,8 +1319,8 @@ IRAM_ATTR void QuickReset_HOST3(){
     GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
     //*gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
 
-    GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
-    //*gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
+    //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
+    *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
 
     //hal_host3->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_host3_dma_out_dma_conf_val = 0b10111000000000000000000000000011;

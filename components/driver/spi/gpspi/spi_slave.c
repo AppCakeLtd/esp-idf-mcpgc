@@ -878,7 +878,12 @@ static IRAM_ATTR void QuickLink_Chunked(lldesc_t *dmadesc, const void *data, int
 // cached inlink and outlink values
 static uint32_t outLink[3] = {0};
 static uint32_t inLink[3] = {0};
-// static uint32_t pickle = 0;
+
+static uint32_t inlink_host2 = 0;
+static uint32_t inlink_host3 = 0;
+
+static uint32_t outlink_host2 = 0;
+static uint32_t outlink_host3 = 0;
 
 // Setup sequence derived from "prepare_data"
 // but without setting up the same unnecessary bits every time
@@ -914,7 +919,7 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     GDMA.channel[rxChan].in.link.start = 1;
     printf("initial inlink %lx\n", GDMA.channel[rxChan].in.link.val);
     inLink[whichHost] = GDMA.channel[rxChan].in.link.val | (1 << 22);
-
+    
     // lldesc_setup_link(hal->dmadesc_tx, hal->tx_buffer, (hal->bitlen  7) / 8, false);
     QuickLink_Chunked(hal->dmadesc_tx, hal->tx_buffer, inLength, false);
 
@@ -937,6 +942,9 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     // Might have to go in the buffers
     if ( whichHost == SPI2_HOST ){
         CacheValues_HOST2();
+    }
+    if ( whichHost == SPI3_HOST ){
+        CacheValues_HOST3();
     }
 
 }
@@ -1181,23 +1189,35 @@ IRAM_ATTR void SetCSConnected(uint32_t whichHost, uint32_t inState)
 static spi_slave_hal_context_t * hal_host2 = NULL;
 static uint32_t rxChan_host2 = 0;
 static uint32_t txChan_host2 = 0;
-
 static uint32_t * gdma_channel_rxchan_host2_in_conf0_val = NULL;
 static uint32_t * hal_host2_dma_in_dma_int_clr_val = NULL;
 static uint32_t * gdma_channel_rxchan_host2_in_link_val = NULL;
-
 static uint32_t * gdma_channel_txchan_host2_out_conf0_val = NULL;
-
 static uint32_t * gdma_channel_txchan_host2_out_link_val = NULL;
 static uint32_t * hal_host2_dma_out_dma_conf_val = NULL;
 
+static spi_slave_hal_context_t * hal_host3 = NULL;
+static uint32_t rxChan_host3 = 0;
+static uint32_t txChan_host3 = 0;
+static uint32_t * gdma_channel_rxchan_host3_in_conf0_val = NULL;
+static uint32_t * hal_host3_dma_in_dma_int_clr_val = NULL;
+static uint32_t * gdma_channel_rxchan_host3_in_link_val = NULL;
+static uint32_t * gdma_channel_txchan_host3_out_conf0_val = NULL;
+static uint32_t * gdma_channel_txchan_host3_out_link_val = NULL;
+static uint32_t * hal_host3_dma_out_dma_conf_val = NULL;
+
 void CacheValues_HOST2(){
+
     printf("__TEST__Caching values for SPI2 host\n");
     hal_host2 = &spihost[SPI2_HOST]->hal;
+
     rxChan_host2 = hal_host2->rx_dma_chan;
     txChan_host2 = hal_host2->tx_dma_chan;
 
     // for quickreset
+
+    inlink_host2 = inLink[SPI2_HOST];
+    outlink_host2 = outLink[SPI2_HOST];
 
     gdma_channel_rxchan_host2_in_conf0_val = &GDMA.channel[rxChan_host2].in.conf0.val;
     hal_host2_dma_in_dma_int_clr_val = &hal_host2->dma_in->dma_int_clr.val;
@@ -1209,6 +1229,32 @@ void CacheValues_HOST2(){
     hal_host2_dma_out_dma_conf_val = &hal_host2->dma_out->dma_conf.val;
 
 }
+
+
+void CacheValues_HOST3(){
+
+    printf("__TEST__Caching values for SPI3 host\n");
+    hal_host3 = &spihost[SPI3_HOST]->hal;
+
+    rxChan_host3 = hal_host3->rx_dma_chan;
+    txChan_host3 = hal_host3->tx_dma_chan;
+
+    inlink_host3 = inLink[SPI3_HOST];
+    outlink_host3 = outLink[SPI3_HOST];
+
+    // for quickreset
+
+    gdma_channel_rxchan_host3_in_conf0_val = &GDMA.channel[rxChan_host3].in.conf0.val;
+    hal_host3_dma_in_dma_int_clr_val = &hal_host3->dma_in->dma_int_clr.val;
+    gdma_channel_rxchan_host3_in_link_val = &GDMA.channel[rxChan_host3].in.link.val;
+
+    gdma_channel_txchan_host3_out_conf0_val = GDMA.channel[txChan_host3].out.conf0.val;
+
+    gdma_channel_txchan_host3_out_link_val = &GDMA.channel[txChan_host3].out.link.val;
+    hal_host3_dma_out_dma_conf_val = &hal_host3->dma_out->dma_conf.val;
+
+}
+
 
 // overkill but it avoids us having to do a bunch of array lookups
 // See QuickReset for a list of changes from the original version
@@ -1230,8 +1276,8 @@ IRAM_ATTR void QuickReset_HOST2(){
     //hal_host2->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     *hal_host2_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
-    GDMA.channel[rxChan_host2].in.link.val = inLink[SPI2_HOST];
-    //*gdma_channel_rxchan_host2_in_link_val = inLink[SPI2_HOST];
+    GDMA.channel[rxChan_host2].in.link.val = inlink_host2;//[SPI2_HOST];
+    //*gdma_channel_rxchan_host2_in_link_val = inlink_host2;//inLink[SPI2_HOST];
 
 
     //GDMA.channel[txChan_host2].out.conf0.val = 0b111001; // reset
@@ -1240,14 +1286,49 @@ IRAM_ATTR void QuickReset_HOST2(){
     //GDMA.channel[txChan_host2].out.conf0.val = 0b111000; // unreset
     //*gdma_channel_txchan_host2_out_conf0_val = 0b111000; // unreset
 
-    //GDMA.channel[txChan_host2].out.link.val = outLink[SPI2_HOST];
-    //*gdma_channel_txchan_host2_out_link_val = outLink[SPI2_HOST];
+    //GDMA.channel[txChan_host2].out.link.val = outlink_host2;//outLink[SPI2_HOST];
+    //*gdma_channel_txchan_host2_out_link_val = outlink_host2;//outLink[SPI2_HOST];
 
     //hal_host2->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     //*hal_host2_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
 
 }
+
+
+
+// overkill but it avoids us having to do a bunch of array lookups
+// See QuickReset for a list of changes from the original version
+IRAM_ATTR void QuickReset_HOST3(){
+
+    // reduces us to 1.52us , 814ns
+        
+    //GDMA.channel[rxChan_host3].in.conf0.val = 0b0;
+    *gdma_channel_rxchan_host3_in_conf0_val = 0b0;
+
+    //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    *hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
+
+    GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[SPI3_HOST];
+    //*gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
+
+
+    GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
+    //*gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
+
+    GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
+    //*gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
+
+    GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
+    //*gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
+
+    //hal_host3->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    *hal_host3_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+
+}
+
+
+
 
 IRAM_ATTR void QuickReset(uint32_t whichHost)
 {

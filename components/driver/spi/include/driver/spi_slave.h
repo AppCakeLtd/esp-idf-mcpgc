@@ -191,6 +191,10 @@ IRAM_ATTR void SpiSlaveSendLite( uint32_t whichHost );
 uint32_t GetHalRXBufferPtr( uint32_t whichHost );
 uint32_t GetHalTXBufferPtr( uint32_t whichHost );
 IRAM_ATTR void QuickReset( uint32_t whichHost );
+IRAM_ATTR void SetCSConnected( uint32_t whichHost, uint32_t inState );
+
+void CacheValues_HOST2();
+IRAM_ATTR void QuickReset_HOST2();
 
 
 #ifdef __cplusplus

@@ -192,9 +192,7 @@ uint32_t GetHalRXBufferPtr( uint32_t whichHost );
 uint32_t GetHalTXBufferPtr( uint32_t whichHost );
 IRAM_ATTR void QuickReset( uint32_t whichHost );
 
-void CacheValues_HOST2();
 void CacheValues_HOST3();
-IRAM_ATTR void QuickReset_HOST2();
 IRAM_ATTR void QuickReset_HOST3();
 
 

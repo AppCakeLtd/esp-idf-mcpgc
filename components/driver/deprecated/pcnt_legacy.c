@@ -107,28 +107,28 @@ static inline esp_err_t _pcnt_get_counter_value(pcnt_port_t pcnt_port, pcnt_unit
 
 static inline esp_err_t _pcnt_counter_pause(pcnt_port_t pcnt_port, pcnt_unit_t pcnt_unit)
 {
-    PCNT_OBJ_CHECK(pcnt_port);
-    PCNT_CHECK(pcnt_unit < SOC_PCNT_UNITS_PER_GROUP, PCNT_UNIT_ERR_STR, ESP_ERR_INVALID_ARG);
-    PCNT_ENTER_CRITICAL(&pcnt_spinlock);
+    //PCNT_OBJ_CHECK(pcnt_port);
+    //PCNT_CHECK(pcnt_unit < SOC_PCNT_UNITS_PER_GROUP, PCNT_UNIT_ERR_STR, ESP_ERR_INVALID_ARG);
+    //PCNT_ENTER_CRITICAL(&pcnt_spinlock);
     pcnt_ll_stop_count(p_pcnt_obj[pcnt_port]->hal.dev, pcnt_unit);
-    PCNT_EXIT_CRITICAL(&pcnt_spinlock);
+    //PCNT_EXIT_CRITICAL(&pcnt_spinlock);
     return ESP_OK;
 }
 
 static inline esp_err_t _pcnt_counter_resume(pcnt_port_t pcnt_port, pcnt_unit_t pcnt_unit)
 {
-    PCNT_OBJ_CHECK(pcnt_port);
-    PCNT_CHECK(pcnt_unit < SOC_PCNT_UNITS_PER_GROUP, PCNT_UNIT_ERR_STR, ESP_ERR_INVALID_ARG);
-    PCNT_ENTER_CRITICAL(&pcnt_spinlock);
+    //PCNT_OBJ_CHECK(pcnt_port);
+    //PCNT_CHECK(pcnt_unit < SOC_PCNT_UNITS_PER_GROUP, PCNT_UNIT_ERR_STR, ESP_ERR_INVALID_ARG);
+    //PCNT_ENTER_CRITICAL(&pcnt_spinlock);
     pcnt_ll_start_count(p_pcnt_obj[pcnt_port]->hal.dev, pcnt_unit);
-    PCNT_EXIT_CRITICAL(&pcnt_spinlock);
+    //PCNT_EXIT_CRITICAL(&pcnt_spinlock);
     return ESP_OK;
 }
 
 static inline esp_err_t _pcnt_counter_clear(pcnt_port_t pcnt_port, pcnt_unit_t pcnt_unit)
 {
-    PCNT_OBJ_CHECK(pcnt_port);
-    PCNT_CHECK(pcnt_unit < SOC_PCNT_UNITS_PER_GROUP, PCNT_UNIT_ERR_STR, ESP_ERR_INVALID_ARG);
+    //PCNT_OBJ_CHECK(pcnt_port);
+    //PCNT_CHECK(pcnt_unit < SOC_PCNT_UNITS_PER_GROUP, PCNT_UNIT_ERR_STR, ESP_ERR_INVALID_ARG);
     PCNT_ENTER_CRITICAL(&pcnt_spinlock);
     pcnt_ll_clear_count(p_pcnt_obj[pcnt_port]->hal.dev, pcnt_unit);
     PCNT_EXIT_CRITICAL(&pcnt_spinlock);

@@ -45,6 +45,9 @@ void spi_flash_enable_interrupts_caches_and_other_cpu(void);
 // This function is implied to be called when other CPU is not running or running code from IRAM.
 void spi_flash_disable_interrupts_caches_and_other_cpu_no_os(void);
 
+// MOD
+void spi_signal_core1_dead(bool inState);
+
 // Enable cache, enable interrupts on current CPU.
 // This function is implied to be called when other CPU is not running or running code from IRAM.
 void spi_flash_enable_interrupts_caches_no_os(void);

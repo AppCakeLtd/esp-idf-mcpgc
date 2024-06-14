@@ -76,6 +76,7 @@ static uint32_t s_flash_op_cache_state[2];
 static SemaphoreHandle_t s_flash_op_mutex;
 static volatile bool s_flash_op_can_start = false;
 static volatile bool s_flash_op_complete = false;
+static volatile bool s_core1_cpu_dead = false;
 #ifndef NDEBUG
 static volatile int s_flash_op_cpu = -1;
 #endif
@@ -106,6 +107,12 @@ void spi_flash_op_unlock(void)
 {
     xSemaphoreGiveRecursive(s_flash_op_mutex);
 }
+
+void spi_signal_core1_dead(bool inState) {
+    s_core1_cpu_dead = inState;
+}
+
+
 /*
  If you're going to modify this, keep in mind that while the flash caches of the pro and app
  cpu are separate, the psram cache is *not*. If one of the CPUs returns from a flash routine
@@ -151,6 +158,10 @@ void IRAM_ATTR spi_flash_op_block_func(void *arg)
 
 void IRAM_ATTR spi_flash_disable_interrupts_caches_and_other_cpu(void)
 {
+    if (s_core1_cpu_dead) {
+        return;
+    }
+
     assert(esp_task_stack_is_sane_cache_disabled());
 
     spi_flash_op_lock();
@@ -213,6 +224,11 @@ void IRAM_ATTR spi_flash_disable_interrupts_caches_and_other_cpu(void)
 
 void IRAM_ATTR spi_flash_enable_interrupts_caches_and_other_cpu(void)
 {
+
+    if (s_core1_cpu_dead) {
+        return;
+    }
+
     const int cpuid = xPortGetCoreID();
 
 #ifndef NDEBUG

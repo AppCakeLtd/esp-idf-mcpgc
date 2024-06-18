@@ -1190,7 +1190,9 @@ UINT8 btsnd_hcic_ble_enhand_rx_test(UINT8 rx_channel, UINT8 phy,
     UINT8_TO_STREAM(pp, phy);
     UINT8_TO_STREAM(pp, modulation_idx);
 
-    return btu_hcif_send_cmd_sync(LOCAL_BR_EDR_CONTROLLER_ID, p);
+    btu_hcif_send_cmd(LOCAL_BR_EDR_CONTROLLER_ID, p);
+
+    return TRUE;
 }
 
 UINT8 btsnd_hcic_ble_enhand_tx_test(UINT8 tx_channel, UINT8 len,
@@ -1212,7 +1214,9 @@ UINT8 btsnd_hcic_ble_enhand_tx_test(UINT8 tx_channel, UINT8 len,
     UINT8_TO_STREAM(pp, packect);
     UINT8_TO_STREAM(pp, phy);
 
-    return btu_hcif_send_cmd_sync(LOCAL_BR_EDR_CONTROLLER_ID, p);
+    btu_hcif_send_cmd(LOCAL_BR_EDR_CONTROLLER_ID, p);
+
+    return TRUE;
 }
 
 UINT8 btsnd_hcic_ble_set_extend_rand_address(UINT8 adv_handle, BD_ADDR rand_addr)
@@ -1905,4 +1909,28 @@ UINT8 btsnd_hcic_ble_set_default_periodic_adv_sync_trans_params(UINT8 mode, UINT
     return btu_hcif_send_cmd_sync(LOCAL_BR_EDR_CONTROLLER_ID, p);
 }
 #endif // #if (BLE_FEAT_PERIODIC_ADV_SYNC_TRANSFER == TRUE)
+
+UINT8 btsnd_hcic_ble_set_privacy_mode(UINT8 addr_type, BD_ADDR addr, UINT8 privacy_mode)
+{
+    BT_HDR *p;
+    UINT8 *pp;
+
+    if ((p = HCI_GET_CMD_BUF (HCIC_PARAM_SIZE_SET_PRIVACY_MODE)) == NULL) {
+        return (FALSE);
+    }
+
+    pp = (UINT8 *)(p + 1);
+    p->len = HCIC_PREAMBLE_SIZE + HCIC_PARAM_SIZE_SET_PRIVACY_MODE;
+    p->offset = 0;
+
+    UINT16_TO_STREAM(pp, HCI_BLE_SET_PRIVACY_MODE);
+    UINT8_TO_STREAM(pp, HCIC_PARAM_SIZE_SET_PRIVACY_MODE);
+
+    UINT8_TO_STREAM(pp, addr_type);
+    BDADDR_TO_STREAM(pp, addr);
+    UINT8_TO_STREAM(pp, privacy_mode);
+
+    btu_hcif_send_cmd(LOCAL_BR_EDR_CONTROLLER_ID, p);
+    return (TRUE);
+}
 #endif

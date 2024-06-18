@@ -10,7 +10,15 @@ import sys
 from asyncio.subprocess import Process
 from pkgutil import iter_modules
 from types import FunctionType
-from typing import Any, Dict, Generator, List, Match, Optional, TextIO, Tuple, Union
+from typing import Any
+from typing import Dict
+from typing import Generator
+from typing import List
+from typing import Match
+from typing import Optional
+from typing import TextIO
+from typing import Tuple
+from typing import Union
 
 import click
 import yaml
@@ -72,6 +80,7 @@ def executable_exists(args: List) -> bool:
 
 
 def _idf_version_from_cmake() -> Optional[str]:
+    """Acquires version of ESP-IDF from version.cmake"""
     version_path = os.path.join(os.environ['IDF_PATH'], 'tools/cmake/version.cmake')
     regex = re.compile(r'^\s*set\s*\(\s*IDF_VERSION_([A-Z]{5})\s+(\d+)')
     ver = {}
@@ -105,7 +114,7 @@ def idf_version() -> Optional[str]:
             '--work-tree=%s' % os.environ['IDF_PATH'],
             'describe', '--tags', '--dirty', '--match', 'v*.*',
         ]).decode('utf-8', 'ignore').strip()
-    except (subprocess.CalledProcessError, UnicodeError):
+    except Exception:
         # if failed, then try to parse cmake.version file
         sys.stderr.write('WARNING: Git version unavailable, reading from source\n')
         version = _idf_version_from_cmake()
@@ -140,7 +149,7 @@ def get_default_serial_port() -> Any:
 
 # function prints warning when autocompletion is not being performed
 # set argument stream to sys.stderr for errors and exceptions
-def print_warning(message: str, stream: TextIO=None) -> None:
+def print_warning(message: str, stream: Optional[TextIO]=None) -> None:
     if not SHELL_COMPLETE_RUN:
         print(message, file=stream or sys.stderr)
 
@@ -269,8 +278,9 @@ def fit_text_in_terminal(out: str) -> str:
 
 
 class RunTool:
-    def __init__(self, tool_name: str, args: List, cwd: str, env: Dict=None, custom_error_handler: FunctionType=None, build_dir: str=None,
-                 hints: bool=True, force_progression: bool=False, interactive: bool=False, convert_output: bool=False) -> None:
+    def __init__(self, tool_name: str, args: List, cwd: str, env: Optional[Dict]=None, custom_error_handler: Optional[FunctionType]=None,
+                 build_dir: Optional[str]=None, hints: bool=True, force_progression: bool=False, interactive: bool=False, convert_output: bool=False
+                 ) -> None:
         self.tool_name = tool_name
         self.args = args
         self.cwd = cwd
@@ -344,9 +354,19 @@ class RunTool:
         stderr_output_file = os.path.join(self.build_dir, log_dir_name, f'idf_py_stderr_output_{p.pid}')
         stdout_output_file = os.path.join(self.build_dir, log_dir_name, f'idf_py_stdout_output_{p.pid}')
         if p.stderr and p.stdout:  # it only to avoid None type in p.std
-            await asyncio.gather(
-                self.read_and_write_stream(p.stderr, stderr_output_file, sys.stderr),
-                self.read_and_write_stream(p.stdout, stdout_output_file, sys.stdout))
+            try:
+                await asyncio.gather(
+                    self.read_and_write_stream(p.stderr, stderr_output_file, sys.stderr),
+                    self.read_and_write_stream(p.stdout, stdout_output_file, sys.stdout))
+            except asyncio.CancelledError:
+                # The process we are trying to read from was terminated. Print the
+                # message here and let the asyncio to finish, because
+                # Runner context in asyncio.run is closing the event loop and
+                # if exception is raised(unhandled here) the transport is not closed before
+                # the even loop is closed and we get RuntimeError: Event loop is closed
+                # in the transport __del__ function because it's trying to use the closed
+                # even loop.
+                red_print(f'\n{self.tool_name} process terminated\n')
         await p.wait()  # added for avoiding None returncode
         return p, stderr_output_file, stdout_output_file
 
@@ -442,7 +462,7 @@ def run_tool(*args: Any, **kwargs: Any) -> None:
 
 
 def run_target(target_name: str, args: 'PropertyDict', env: Optional[Dict]=None,
-               custom_error_handler: FunctionType=None, force_progression: bool=False, interactive: bool=False) -> None:
+               custom_error_handler: Optional[FunctionType]=None, force_progression: bool=False, interactive: bool=False) -> None:
     """Run target in build directory."""
     if env is None:
         env = {}
@@ -525,7 +545,7 @@ def _detect_cmake_generator(prog_name: str) -> Any:
 
 
 def ensure_build_directory(args: 'PropertyDict', prog_name: str, always_run_cmake: bool=False,
-                           env: Dict=None) -> None:
+                           env: Optional[Dict]=None) -> None:
     """Check the build directory exists and that cmake has been run there.
 
     If this isn't the case, create the build directory (if necessary) and
@@ -642,7 +662,7 @@ def merge_action_lists(*action_lists: Dict) -> Dict:
     return merged_actions
 
 
-def get_sdkconfig_filename(args: 'PropertyDict', cache_cmdl: Dict=None) -> str:
+def get_sdkconfig_filename(args: 'PropertyDict', cache_cmdl: Optional[Dict]=None) -> str:
     """
     Get project's sdkconfig file name.
     """
@@ -691,7 +711,7 @@ def is_target_supported(project_path: str, supported_targets: List) -> bool:
 
 
 def _check_idf_target(args: 'PropertyDict', prog_name: str, cache: Dict,
-                      cache_cmdl: Dict, env: Dict=None) -> None:
+                      cache_cmdl: Dict, env: Optional[Dict]=None) -> None:
     """
     Cross-check the three settings (sdkconfig, CMakeCache, environment) and if there is
     mismatch, fail with instructions on how to fix this.

@@ -1171,14 +1171,18 @@ IRAM_ATTR inline void QuickReset_HOST3(){
 // then this is your guy
 IRAM_ATTR inline void QuickerReset_HOST3(){
 
-    // reduces us to 1.52us , 814ns
-        
+    // 1) and 2) required to reset the trans_done flag (if u care)
+    // if not, just wait it out
+
+    // 1) this alone does not reset trans_done
     //GDMA.channel[rxChan_host3].in.conf0.val = 0b0;
     //*gdma_channel_rxchan_host3_in_conf0_val = 0b0;
-
+    
+    // 2) this alone does not reset trans_done
     //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     //*hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
+    // this alone doees not reset trans_done
     //GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[SPI3_HOST];
     //*gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
 
@@ -1186,14 +1190,9 @@ IRAM_ATTR inline void QuickerReset_HOST3(){
     //GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
     *gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
 
-              for (int i = 0; i < 2; i++)
-              {
-                __asm__ volatile("nop");
-              }
-
     //GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
     *gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
-
+    
     //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
     *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
 

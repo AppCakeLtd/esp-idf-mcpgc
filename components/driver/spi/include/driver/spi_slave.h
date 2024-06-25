@@ -194,6 +194,8 @@ IRAM_ATTR void QuickReset( uint32_t whichHost );
 
 void CacheValues_HOST3();
 IRAM_ATTR void QuickReset_HOST3();
+IRAM_ATTR void QuickerReset_HOST3();
+uint32_t GetTheTestFunction();
 
 
 #ifdef __cplusplus

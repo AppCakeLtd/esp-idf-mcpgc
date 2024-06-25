@@ -1095,14 +1095,14 @@ IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
 
 
 static spi_slave_hal_context_t * hal_host3 = NULL;
-static uint32_t rxChan_host3 = 0;
-static uint32_t txChan_host3 = 0;
-static uint32_t * gdma_channel_rxchan_host3_in_conf0_val = NULL;
-static uint32_t * hal_host3_dma_in_dma_int_clr_val = NULL;
-static uint32_t * gdma_channel_rxchan_host3_in_link_val = NULL;
-static uint32_t * gdma_channel_txchan_host3_out_conf0_val = NULL;
-static uint32_t * gdma_channel_txchan_host3_out_link_val = NULL;
-static uint32_t * hal_host3_dma_out_dma_conf_val = NULL;
+static volatile uint32_t rxChan_host3 = 0;
+static volatile uint32_t txChan_host3 = 0;
+static volatile uint32_t * gdma_channel_rxchan_host3_in_conf0_val = NULL;
+static volatile uint32_t * hal_host3_dma_in_dma_int_clr_val = NULL;
+static volatile uint32_t * gdma_channel_rxchan_host3_in_link_val = NULL;
+static volatile uint32_t * gdma_channel_txchan_host3_out_conf0_val = NULL;
+static volatile uint32_t * gdma_channel_txchan_host3_out_link_val = NULL;
+static volatile uint32_t * hal_host3_dma_out_dma_conf_val = NULL;
 
 
 
@@ -1131,9 +1131,13 @@ void CacheValues_HOST3(){
 }
 
 
+
 // overkill but it avoids us having to do a bunch of array lookups
 // See QuickReset for a list of changes from the original version
-IRAM_ATTR void QuickReset_HOST3(){
+// what it does:
+// resets the trans-done flag
+// updates the contents of the next output buffer
+IRAM_ATTR inline void QuickReset_HOST3(){
 
     // reduces us to 1.52us , 814ns
         
@@ -1147,11 +1151,11 @@ IRAM_ATTR void QuickReset_HOST3(){
     *gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
 
 
-    GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
-    //*gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
+    //GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
+    *gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
 
-    GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
-    //*gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
+    //GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
+    *gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
 
     //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
     *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
@@ -1161,7 +1165,78 @@ IRAM_ATTR void QuickReset_HOST3(){
 
 }
 
+// A qucker version of quickreset
+// if you don't need to reset the input buffer
+// but just update the outgoing bytes a bit
+// then this is your guy
+IRAM_ATTR inline void QuickerReset_HOST3(){
 
+    // reduces us to 1.52us , 814ns
+        
+    //GDMA.channel[rxChan_host3].in.conf0.val = 0b0;
+    //*gdma_channel_rxchan_host3_in_conf0_val = 0b0;
+
+    //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    //*hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
+
+    //GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[SPI3_HOST];
+    //*gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
+
+
+    //GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
+    *gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
+
+              for (int i = 0; i < 2; i++)
+              {
+                __asm__ volatile("nop");
+              }
+
+    //GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
+    *gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
+
+    //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
+    *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
+
+    //hal_host3->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    *hal_host3_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+
+}
+
+// A qucker version of quickreset
+// if you don't need to reset the input buffer
+// but just update the outgoing bytes a bit
+// then this is your guy
+IRAM_ATTR static void TESTME(){
+
+    // reduces us to 1.52us , 814ns
+        
+    //GDMA.channel[rxChan_host3].in.conf0.val = 0b0;
+    //*gdma_channel_rxchan_host3_in_conf0_val = 0b0;
+
+    //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    *hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
+
+    //GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[SPI3_HOST];
+    //*gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[SPI3_HOST];
+
+
+    //GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
+    *gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
+
+    //GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
+    *gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
+
+    //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[SPI3_HOST];
+    *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[SPI3_HOST];
+
+    //hal_host3->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    *hal_host3_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+
+}
+
+uint32_t GetTheTestFunction(){
+    return (uint32_t)&TESTME;
+}
 
 
 IRAM_ATTR void QuickReset(uint32_t whichHost)

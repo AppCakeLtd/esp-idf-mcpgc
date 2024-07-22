@@ -3783,6 +3783,7 @@ FRESULT f_open (
 					memset(fs->dirbuf + 38, 0, 26);	/* Clear C0 entry except for NumName and NameHash */
 					fs->dirbuf[XDIR_Attr] = AM_ARC;
 					st_dword(fs->dirbuf + XDIR_CrtTime, GET_FATTIME());
+					fs->dirbuf[XDIR_CrtTZ] = 0x80;  // timezone 0 + valid flag
 					fs->dirbuf[XDIR_GenFlags] = 1;
 					res = store_xdir(&dj);
 					if (res == FR_OK && fp->obj.sclust != 0) {	/* Remove the cluster chain if exist */
@@ -4175,7 +4176,8 @@ FRESULT f_sync (
 						st_qword(fs->dirbuf + XDIR_ValidFileSize, fp->obj.objsize);	/* (FatFs does not support Valid File Size feature) */
 						st_dword(fs->dirbuf + XDIR_ModTime, tm);		/* Update modified time */
 						fs->dirbuf[XDIR_ModTime10] = 0;
-						st_dword(fs->dirbuf + XDIR_AccTime, 0);
+						fs->dirbuf[XDIR_CrtTZ] = 0x80;  // timezone 0 + valid flag
+						st_dword(fs->dirbuf + XDIR_AccTime, 0);						
 						res = store_xdir(&dj);	/* Restore it to the directory */
 						if (res == FR_OK) {
 							res = sync_fs(fs);

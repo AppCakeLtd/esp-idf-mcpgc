@@ -21,9 +21,11 @@ extern "C" {
 
 // Forces code into IRAM instead of flash
 #define IRAM_ATTR _SECTION_ATTR_IMPL(".iram1", __COUNTER__)
+#define DRAM_ATTR _SECTION_ATTR_IMPL(".dram1", __COUNTER__)
 
 // Forces data into DRAM instead of flash
 #define DRAM_ATTR _SECTION_ATTR_IMPL(".dram1", __COUNTER__)
+#define DRAM2_ATTR _SECTION_ATTR_IMPL(".dram2", __COUNTER__)
 
 // IRAM can only be accessed as an 8-bit memory on ESP32, when CONFIG_ESP32_IRAM_AS_8BIT_ACCESSIBLE_MEMORY is set
 #define IRAM_8BIT_ACCESSIBLE (CONFIG_IDF_TARGET_ESP32 && CONFIG_ESP32_IRAM_AS_8BIT_ACCESSIBLE_MEMORY)

@@ -185,6 +185,17 @@ esp_err_t spi_slave_get_trans_result(spi_host_device_t host, spi_slave_transacti
  */
 esp_err_t spi_slave_transmit(spi_host_device_t host, spi_slave_transaction_t *trans_desc, TickType_t ticks_to_wait);
 
+esp_err_t SpiSlaveInitLite(spi_host_device_t host, const spi_bus_config_t *bus_config, const spi_slave_interface_config_t *slave_config, spi_dma_chan_t dma_chan, uint32_t * inIntrFlags);
+void SpiSlaveInitBuffersLite( uint32_t whichHost, uint8_t * txBuffer, uint8_t * rxBuffer, uint32_t inLength, uint32_t flashDebug );
+IRAM_ATTR void SpiSlaveSendLite( uint32_t whichHost );
+uint32_t GetHalRXBufferPtr( uint32_t whichHost );
+uint32_t GetHalTXBufferPtr( uint32_t whichHost );
+IRAM_ATTR void QuickReset( uint32_t whichHost );
+
+void CacheValues_HOST3();
+IRAM_ATTR void QuickReset_HOST3();
+IRAM_ATTR void QuickerReset_HOST3();
+
 
 #ifdef __cplusplus
 }

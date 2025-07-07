@@ -661,8 +661,12 @@ esp_err_t SpiSlaveInitLite(spi_host_device_t host, const spi_bus_config_t *bus_c
         {
             goto cleanup;
         }
+
+        printf("SPI Slave %ld using DMA channelels tx=%ld and rx=%lx\n", (uint32_t)host, actual_tx_dma_chan, actual_rx_dma_chan);
+    } else {
+        printf("SPI Slave %ld is NOT using DMA\n", (uint32_t) host);
     }
-    printf("SPI Slave %ld using DMA channelels tx=%ld and rx=%lx\n", (uint32_t)host, actual_tx_dma_chan, actual_rx_dma_chan);
+    
 
     err = spicommon_bus_initialize_io(host, bus_config, SPICOMMON_BUSFLAG_SLAVE | bus_config->flags, &spihost[host]->flags);
     if (err != ESP_OK)

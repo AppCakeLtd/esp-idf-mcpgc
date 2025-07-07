@@ -885,8 +885,8 @@ static uint32_t outLink[3] = {0};
 static uint32_t inLink[3] = {0};
 
 
-static uint32_t inlink_host3 = 0;
-static uint32_t outlink_host3 = 0;
+static uint32_t inlink_hostMAIN = 0;
+static uint32_t outlink_hostMAIN = 0;
 
 // Setup sequence derived from "prepare_data"
 // but without setting up the same unnecessary bits every time
@@ -943,7 +943,7 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     // spihost[whichHost]->cur_trans->txBuffer;
 
     if ( whichHost == HOST_MAIN ){
-        CacheValues_HOST3();
+        CacheValues_HostMAIN();
     }
 
 }
@@ -1095,39 +1095,39 @@ IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
 
 
 
-static spi_slave_hal_context_t * hal_host3 = NULL;
-static volatile uint32_t rxChan_host3 = 0;
-static volatile uint32_t txChan_host3 = 0;
-static volatile uint32_t * gdma_channel_rxchan_host3_in_conf0_val = NULL;
-static volatile uint32_t * hal_host3_dma_in_dma_int_clr_val = NULL;
-static volatile uint32_t * gdma_channel_rxchan_host3_in_link_val = NULL;
-static volatile uint32_t * gdma_channel_txchan_host3_out_conf0_val = NULL;
-static volatile uint32_t * gdma_channel_txchan_host3_out_link_val = NULL;
-static volatile uint32_t * hal_host3_dma_out_dma_conf_val = NULL;
+static spi_slave_hal_context_t * hal_hostMAIN = NULL;
+static volatile uint32_t rxChan_hostMAIN = 0;
+static volatile uint32_t txChan_hostMAIN = 0;
+static volatile uint32_t * gdma_channel_rxChan_hostMAIN_in_conf0_val = NULL;
+static volatile uint32_t * hal_hostMAIN_dma_in_dma_int_clr_val = NULL;
+static volatile uint32_t * gdma_channel_rxChan_hostMAIN_in_link_val = NULL;
+static volatile uint32_t * gdma_channel_txChan_hostMAIN_out_conf0_val = NULL;
+static volatile uint32_t * gdma_channel_txChan_hostMAIN_out_link_val = NULL;
+static volatile uint32_t * hal_hostMAIN_dma_out_dma_conf_val = NULL;
 
 
 
-void CacheValues_HOST3(){
+void CacheValues_HostMAIN(){
 
-    printf("__TEST__Caching values for SPI3 host\n");
-    hal_host3 = &spihost[HOST_MAIN]->hal;
+    printf("__TEST__Caching values for MAIN host\n");
+    hal_hostMAIN = &spihost[HOST_MAIN]->hal;
 
-    rxChan_host3 = hal_host3->rx_dma_chan;
-    txChan_host3 = hal_host3->tx_dma_chan;
+    rxChan_hostMAIN = hal_hostMAIN->rx_dma_chan;
+    txChan_hostMAIN = hal_hostMAIN->tx_dma_chan;
 
-    inlink_host3 = inLink[HOST_MAIN];
-    outlink_host3 = outLink[HOST_MAIN];
+    inlink_hostMAIN = inLink[HOST_MAIN];
+    outlink_hostMAIN = outLink[HOST_MAIN];
 
     // for quickreset
 
-    gdma_channel_rxchan_host3_in_conf0_val = &GDMA.channel[rxChan_host3].in.conf0.val;
-    hal_host3_dma_in_dma_int_clr_val = &hal_host3->dma_in->dma_int_clr.val;
-    gdma_channel_rxchan_host3_in_link_val = &GDMA.channel[rxChan_host3].in.link.val;
+    gdma_channel_rxChan_hostMAIN_in_conf0_val = &GDMA.channel[rxChan_hostMAIN].in.conf0.val;
+    hal_hostMAIN_dma_in_dma_int_clr_val = &hal_hostMAIN->dma_in->dma_int_clr.val;
+    gdma_channel_rxChan_hostMAIN_in_link_val = &GDMA.channel[rxChan_hostMAIN].in.link.val;
 
-    gdma_channel_txchan_host3_out_conf0_val = &GDMA.channel[txChan_host3].out.conf0.val;
+    gdma_channel_txChan_hostMAIN_out_conf0_val = &GDMA.channel[txChan_hostMAIN].out.conf0.val;
 
-    gdma_channel_txchan_host3_out_link_val = &GDMA.channel[txChan_host3].out.link.val;
-    hal_host3_dma_out_dma_conf_val = &hal_host3->dma_out->dma_conf.val;
+    gdma_channel_txChan_hostMAIN_out_link_val = &GDMA.channel[txChan_hostMAIN].out.link.val;
+    hal_hostMAIN_dma_out_dma_conf_val = &hal_hostMAIN->dma_out->dma_conf.val;
 
 }
 
@@ -1138,31 +1138,31 @@ void CacheValues_HOST3(){
 // what it does:
 // resets the trans-done flag
 // updates the contents of the next output buffer
-IRAM_ATTR inline void QuickReset_HOST3(){
+IRAM_ATTR inline void QuickReset_HostMAIN(){
 
     // reduces us to 1.52us , 814ns
         
-    //GDMA.channel[rxChan_host3].in.conf0.val = 0b0;
-    *gdma_channel_rxchan_host3_in_conf0_val = 0b0;
+    //GDMA.channel[rxChan_hostMAIN].in.conf0.val = 0b0;
+    *gdma_channel_rxChan_hostMAIN_in_conf0_val = 0b0;
 
-    //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
-    *hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
+    //hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    *hal_hostMAIN_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
-    //GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[HOST_MAIN];
-    *gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[HOST_MAIN];
+    //GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
+    *gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN;//inLink[HOST_MAIN];
 
 
-    //GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
-    *gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
+    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111001; // reset
+    *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111001; // reset
 
-    //GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
-    *gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
+    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111000; // unreset
+    *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111000; // unreset
 
-    //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[HOST_MAIN];
-    *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[HOST_MAIN];
+    //GDMA.channel[txChan_hostMAIN].out.link.val = outlink_hostMAIN;//outLink[HOST_MAIN];
+    *gdma_channel_txChan_hostMAIN_out_link_val = outlink_hostMAIN;//outLink[HOST_MAIN];
 
-    //hal_host3->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
-    *hal_host3_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+    //hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
 }
 
@@ -1170,35 +1170,35 @@ IRAM_ATTR inline void QuickReset_HOST3(){
 // if you don't need to reset the input buffer
 // but just update the outgoing bytes a bit
 // then this is your guy
-IRAM_ATTR inline void QuickerReset_HOST3(){
+IRAM_ATTR inline void QuickerReset_HostMAIN(){
 
     // 1) and 2) required to reset the trans_done flag (if u care)
     // if not, just wait it out
 
     // 1) this alone does not reset trans_done
-    //GDMA.channel[rxChan_host3].in.conf0.val = 0b0;
-    //*gdma_channel_rxchan_host3_in_conf0_val = 0b0;
+    //GDMA.channel[rxChan_hostMAIN].in.conf0.val = 0b0;
+    //*gdma_channel_rxChan_hostMAIN_in_conf0_val = 0b0;
     
     // 2) this alone does not reset trans_done
-    //hal_host3->dma_in->dma_int_clr.val = 0xFFFFFFFF;
-    //*hal_host3_dma_in_dma_int_clr_val = 0xFFFFFFFF;
+    //hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    //*hal_hostMAIN_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
     // this alone doees not reset trans_done
-    //GDMA.channel[rxChan_host3].in.link.val = inlink_host3;//[HOST_MAIN];
-    //*gdma_channel_rxchan_host3_in_link_val = inlink_host3;//inLink[HOST_MAIN];
+    //GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
+    //*gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN;//inLink[HOST_MAIN];
 
 
-    //GDMA.channel[txChan_host3].out.conf0.val = 0b111001; // reset
-    *gdma_channel_txchan_host3_out_conf0_val = 0b111001; // reset
+    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111001; // reset
+    *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111001; // reset
 
-    //GDMA.channel[txChan_host3].out.conf0.val = 0b111000; // unreset
-    *gdma_channel_txchan_host3_out_conf0_val = 0b111000; // unreset
+    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111000; // unreset
+    *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111000; // unreset
     
-    //GDMA.channel[txChan_host3].out.link.val = outlink_host3;//outLink[HOST_MAIN];
-    *gdma_channel_txchan_host3_out_link_val = outlink_host3;//outLink[HOST_MAIN];
+    //GDMA.channel[txChan_hostMAIN].out.link.val = outlink_hostMAIN;//outLink[HOST_MAIN];
+    *gdma_channel_txChan_hostMAIN_out_link_val = outlink_hostMAIN;//outLink[HOST_MAIN];
 
-    //hal_host3->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
-    *hal_host3_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+    //hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
 }
 

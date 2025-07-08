@@ -52,7 +52,10 @@ static const char *SPI_TAG = "spi_slave";
 #endif
 
 
-// [MCPGC-63] Prior to July 2025, SPI3 was the main
+// [MCPGC-63]
+// Wasn't able to get GDMA to trigger per-byte with SPI2_HOST
+// but let's leave in the refactor since it clarifies things
+// and might be useful in the future if that changes.
 #define HOST_MAIN SPI3_HOST
 #define HOST_PEEK SPI2_HOST
 

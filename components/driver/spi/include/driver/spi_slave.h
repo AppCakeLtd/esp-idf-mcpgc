@@ -12,6 +12,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "driver/spi_common.h"
+#include "esp_rom_lldesc.h"
 
 
 #ifdef __cplusplus
@@ -195,6 +196,31 @@ IRAM_ATTR void QuickReset( uint32_t whichHost );
 void CacheValues_HostMAIN();
 IRAM_ATTR void QuickReset_HostMAIN();
 IRAM_ATTR void QuickerReset_HostMAIN();
+
+// Split version for deferred outlink selection (for 0x8B subcommand handling)
+// 1. Call Prepare() after detecting 0x8B
+// 2. Disconnect CS
+// 3. Wait for byte 2 detection
+// 4. Call Finalize() with appropriate outlink based on byte 2
+IRAM_ATTR void QuickerReset_HostMAIN_Prepare();
+IRAM_ATTR void QuickerReset_HostMAIN_Finalize(uint32_t outlink);
+
+// Get the default outlink value
+uint32_t GetOutlink_HostMAIN();
+
+// Get TX DMA descriptor pointer for manual reset of offset/length fields
+lldesc_t* GetTxDescriptor_HostMAIN();
+
+// Create outlink from DMA descriptor address (descriptor must be set up first)
+uint32_t CreateOutlinkFromDescriptor(void* dmadesc_addr);
+
+// Direct register pointers for maximum speed (bypass function call)
+volatile uint32_t* Get_OutlinkRegPtr_HostMAIN();
+volatile uint32_t* Get_DmaConfRegPtr_HostMAIN();
+volatile uint32_t* Get_Conf0RegPtr_HostMAIN();
+
+// Magic value for DMA conf register
+#define DMA_CONF_VALUE_HOSTMAIN 0b10111000000000000000000000000011
 
 
 #ifdef __cplusplus

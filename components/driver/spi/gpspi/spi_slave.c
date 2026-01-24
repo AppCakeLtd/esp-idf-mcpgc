@@ -51,7 +51,6 @@ static const char *SPI_TAG = "spi_slave";
 #define SPI_SLAVE_ATTR
 #endif
 
-
 // [MCPGC-63]
 // Wasn't able to get GDMA to trigger per-byte with SPI2_HOST
 // but let's leave in the refactor since it clarifies things
@@ -666,10 +665,11 @@ esp_err_t SpiSlaveInitLite(spi_host_device_t host, const spi_bus_config_t *bus_c
         }
 
         printf("SPI Slave %ld using DMA channelels tx=%ld and rx=%lx\n", (uint32_t)host, actual_tx_dma_chan, actual_rx_dma_chan);
-    } else {
-        printf("SPI Slave %ld is NOT using DMA\n", (uint32_t) host);
     }
-    
+    else
+    {
+        printf("SPI Slave %ld is NOT using DMA\n", (uint32_t)host);
+    }
 
     err = spicommon_bus_initialize_io(host, bus_config, SPICOMMON_BUSFLAG_SLAVE | bus_config->flags, &spihost[host]->flags);
     if (err != ESP_OK)
@@ -891,7 +891,6 @@ static IRAM_ATTR void QuickLink_Chunked(lldesc_t *dmadesc, const void *data, int
 static uint32_t outLink[3] = {0};
 static uint32_t inLink[3] = {0};
 
-
 static uint32_t inlink_hostMAIN = 0;
 static uint32_t outlink_hostMAIN = 0;
 
@@ -929,7 +928,7 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     GDMA.channel[rxChan].in.link.start = 1;
     printf("initial inlink %lx\n", GDMA.channel[rxChan].in.link.val);
     inLink[whichHost] = GDMA.channel[rxChan].in.link.val | (1 << 22);
-    
+
     // lldesc_setup_link(hal->dmadesc_tx, hal->tx_buffer, (hal->bitlen  7) / 8, false);
     QuickLink_Chunked(hal->dmadesc_tx, hal->tx_buffer, inLength, false);
 
@@ -949,10 +948,10 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     // spihost[whichHost]->cur_trans->rxBuffer;
     // spihost[whichHost]->cur_trans->txBuffer;
 
-    if ( whichHost == HOST_MAIN ){
+    if (whichHost == HOST_MAIN)
+    {
         CacheValues_HostMAIN();
     }
-
 }
 
 // This is largely taken from spi_slave_hal_iram.c's prepare_data() function
@@ -1074,7 +1073,7 @@ IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
     // shared
     // hal->hw->slave.soft_reset = 1;
     // skip this // hal->hw->slave.soft_reset = 0; // skip this
-    activeHal->hw->slave.val = 0b00001110100000000000000000000000;
+    activeHal->hw->slave.val = 0b00001110100000000000001000000000;
     // skip this // hal->hw->slave.val = 0b0000'0110'1000'0000'0000'0000'0000'0000;
 
     // This points at the <dma>.dma_conf.* union
@@ -1095,26 +1094,21 @@ IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
     // works without
     // 2023 note: no it doesn't.
     // spi_slave_hal_user_start(hal);
-
 }
 
-
-
-
-
-static spi_slave_hal_context_t * hal_hostMAIN = NULL;
+static spi_slave_hal_context_t *hal_hostMAIN = NULL;
 static volatile uint32_t rxChan_hostMAIN = 0;
 static volatile uint32_t txChan_hostMAIN = 0;
-static volatile uint32_t * gdma_channel_rxChan_hostMAIN_in_conf0_val = NULL;
-static volatile uint32_t * hal_hostMAIN_dma_in_dma_int_clr_val = NULL;
-static volatile uint32_t * gdma_channel_rxChan_hostMAIN_in_link_val = NULL;
-static volatile uint32_t * gdma_channel_txChan_hostMAIN_out_conf0_val = NULL;
-static volatile uint32_t * gdma_channel_txChan_hostMAIN_out_link_val = NULL;
-static volatile uint32_t * hal_hostMAIN_dma_out_dma_conf_val = NULL;
+static volatile uint32_t *gdma_channel_rxChan_hostMAIN_in_conf0_val = NULL;
+static volatile uint32_t *hal_hostMAIN_dma_in_dma_int_clr_val = NULL;
+static volatile uint32_t *gdma_channel_rxChan_hostMAIN_in_link_val = NULL;
+static volatile uint32_t *gdma_channel_txChan_hostMAIN_out_conf0_val = NULL;
+static volatile uint32_t *gdma_channel_txChan_hostMAIN_out_link_val = NULL;
+static volatile uint32_t *hal_hostMAIN_dma_out_dma_conf_val = NULL;
+static lldesc_t *dmadesc_tx_hostMAIN = NULL;
 
-
-
-void CacheValues_HostMAIN(){
+void CacheValues_HostMAIN()
+{
 
     printf("__TEST__Caching values for MAIN host\n");
     hal_hostMAIN = &spihost[HOST_MAIN]->hal;
@@ -1135,81 +1129,146 @@ void CacheValues_HostMAIN(){
 
     gdma_channel_txChan_hostMAIN_out_link_val = &GDMA.channel[txChan_hostMAIN].out.link.val;
     hal_hostMAIN_dma_out_dma_conf_val = &hal_hostMAIN->dma_out->dma_conf.val;
-
+    dmadesc_tx_hostMAIN = hal_hostMAIN->dmadesc_tx;
 }
-
-
 
 // overkill but it avoids us having to do a bunch of array lookups
 // See QuickReset for a list of changes from the original version
 // what it does:
 // resets the trans-done flag
 // updates the contents of the next output buffer
-IRAM_ATTR inline void QuickReset_HostMAIN(){
+IRAM_ATTR inline void QuickReset_HostMAIN()
+{
 
     // reduces us to 1.52us , 814ns
-        
-    //GDMA.channel[rxChan_hostMAIN].in.conf0.val = 0b0;
-    *gdma_channel_rxChan_hostMAIN_in_conf0_val = 0b0;
 
-    //hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    // GDMA.channel[rxChan_hostMAIN].in.conf0.val - must reset/unreset to clear FIFO
+    // Setting in_rst (bit 0) resets the Rx FSM and Rx FIFO pointer
+    *gdma_channel_rxChan_hostMAIN_in_conf0_val = 0b1; // set in_rst
+    *gdma_channel_rxChan_hostMAIN_in_conf0_val = 0b0; // clear in_rst
+
+    // hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     *hal_hostMAIN_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
-    //GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
-    *gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN;//inLink[HOST_MAIN];
+    // GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
+    *gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN; // inLink[HOST_MAIN];
 
-
-    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111001; // reset
+    // GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111001; // reset
     *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111001; // reset
 
-    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111000; // unreset
+    // GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111000; // unreset
     *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111000; // unreset
 
-    //GDMA.channel[txChan_hostMAIN].out.link.val = outlink_hostMAIN;//outLink[HOST_MAIN];
-    *gdma_channel_txChan_hostMAIN_out_link_val = outlink_hostMAIN;//outLink[HOST_MAIN];
+    // Reset TX descriptor for next transaction
+    dmadesc_tx_hostMAIN->owner = 1;
+    dmadesc_tx_hostMAIN->offset = 0;
 
-    //hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    // GDMA.channel[txChan_hostMAIN].out.link.val = outlink_hostMAIN;//outLink[HOST_MAIN];
+    *gdma_channel_txChan_hostMAIN_out_link_val = outlink_hostMAIN; // outLink[HOST_MAIN];
+
+    // hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
-
 }
 
 // A qucker version of quickreset
 // if you don't need to reset the input buffer
 // but just update the outgoing bytes a bit
 // then this is your guy
-IRAM_ATTR inline void QuickerReset_HostMAIN(){
+IRAM_ATTR inline void QuickerReset_HostMAIN()
+{
 
     // 1) and 2) required to reset the trans_done flag (if u care)
     // if not, just wait it out
 
     // 1) this alone does not reset trans_done
-    //GDMA.channel[rxChan_hostMAIN].in.conf0.val = 0b0;
+    // GDMA.channel[rxChan_hostMAIN].in.conf0.val = 0b0;
     //*gdma_channel_rxChan_hostMAIN_in_conf0_val = 0b0;
-    
+
     // 2) this alone does not reset trans_done
-    //hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
+    // hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     //*hal_hostMAIN_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
     // this alone doees not reset trans_done
-    //GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
+    // GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
     //*gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN;//inLink[HOST_MAIN];
 
-
-    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111001; // reset
+    // GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111001; // reset
     *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111001; // reset
 
-    //GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111000; // unreset
+    // GDMA.channel[txChan_hostMAIN].out.conf0.val = 0b111000; // unreset
     *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111000; // unreset
-    
-    //GDMA.channel[txChan_hostMAIN].out.link.val = outlink_hostMAIN;//outLink[HOST_MAIN];
-    *gdma_channel_txChan_hostMAIN_out_link_val = outlink_hostMAIN;//outLink[HOST_MAIN];
 
-    //hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
+    // Reset TX descriptor for next transaction
+    dmadesc_tx_hostMAIN->owner = 1;
+    dmadesc_tx_hostMAIN->offset = 0;
+
+    // GDMA.channel[txChan_hostMAIN].out.link.val = outlink_hostMAIN;//outLink[HOST_MAIN];
+    *gdma_channel_txChan_hostMAIN_out_link_val = outlink_hostMAIN; // outLink[HOST_MAIN];
+
+    // hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
-
 }
 
+// Split version of QuickerReset for deferred outlink selection
+// Call Prepare first, then Finalize with the appropriate outlink after detecting byte 2
+IRAM_ATTR inline void QuickerReset_HostMAIN_Prepare()
+{
+    // Reset/unreset the TX DMA channel
+    *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111001; // reset
+    *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111000; // unreset
+}
 
+IRAM_ATTR inline void QuickerReset_HostMAIN_Finalize(uint32_t outlink)
+{
+    // Set the outlink (which buffer to send from)
+    *gdma_channel_txChan_hostMAIN_out_link_val = outlink;
+    // Configure DMA
+    *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+}
+
+// Get the default outlink value (for ping response etc)
+uint32_t GetOutlink_HostMAIN()
+{
+    return outlink_hostMAIN;
+}
+
+// Get TX DMA descriptor pointer for manual reset of offset/length fields
+lldesc_t *GetTxDescriptor_HostMAIN()
+{
+    return hal_hostMAIN->dmadesc_tx;
+}
+
+// Create an outlink value from a DMA descriptor address
+// The descriptor should be set up with buffer, size, length, eof=1, owner=1
+uint32_t CreateOutlinkFromDescriptor(void *dmadesc_addr)
+{
+    // outlink register format:
+    // bits 0-19: 20 LSBs of descriptor address
+    // bit 20: stop
+    // bit 21: start
+    // bit 22: restart
+    // Note: descriptor must be in DMA-capable memory (internal SRAM)
+    return (((uint32_t)dmadesc_addr) & 0xFFFFF) | (1 << 21);
+}
+
+// Get pointers for direct register writes (maximum speed, bypass function call overhead)
+volatile uint32_t *Get_OutlinkRegPtr_HostMAIN()
+{
+    return gdma_channel_txChan_hostMAIN_out_link_val;
+}
+
+volatile uint32_t *Get_DmaConfRegPtr_HostMAIN()
+{
+    return hal_hostMAIN_dma_out_dma_conf_val;
+}
+
+volatile uint32_t *Get_Conf0RegPtr_HostMAIN()
+{
+    return gdma_channel_txChan_hostMAIN_out_conf0_val;
+}
+
+// The magic DMA conf value for reference
+#define DMA_CONF_VALUE_HOSTMAIN 0b10111000000000000000000000000011
 
 IRAM_ATTR void QuickReset(uint32_t whichHost)
 {

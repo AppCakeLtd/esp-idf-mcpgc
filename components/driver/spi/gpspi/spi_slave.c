@@ -1216,11 +1216,12 @@ IRAM_ATTR inline void QuickerReset_HostMAIN_Prepare()
     // Reset/unreset the TX DMA channel
     *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111001; // reset
     *gdma_channel_txChan_hostMAIN_out_conf0_val = 0b111000; // unreset
+    dmadesc_tx_hostMAIN->owner = 1;
+    dmadesc_tx_hostMAIN->offset = 0;
 }
 
 IRAM_ATTR inline void QuickerReset_HostMAIN_Finalize(uint32_t outlink)
 {
-    // Set the outlink (which buffer to send from)
     *gdma_channel_txChan_hostMAIN_out_link_val = outlink;
     // Configure DMA
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;

@@ -954,6 +954,17 @@ void SpiSlaveInitBuffersLite(uint32_t whichHost, uint8_t *txBuffer, uint8_t *rxB
     }
 }
 
+// Conditional MISO timing: when true, output MISO half a clock earlier
+// to compensate for FPGA passthrough propagation delay.
+// Only enabled during MMCE block transfers on the FPGA version.
+static volatile bool rsck_data_out_enabled = false;
+
+void SetRsckDataOut(bool enabled)
+{
+    rsck_data_out_enabled = enabled;
+    GPSPI3.slave.rsck_data_out = enabled;
+}
+
 // This is largely taken from spi_slave_hal_iram.c's prepare_data() function
 // formerly SendStuff
 IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
@@ -1083,6 +1094,9 @@ IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
     // bits 31 & 29 (dma_afifo_rst & rx_afifo_rst) <-- this is correct, idk about the third one
     activeHal->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
 
+    if (rsck_data_out_enabled)
+        GPSPI3.slave.rsck_data_out = true;
+
     // shared
 
     // not used in the esp32s3
@@ -1168,6 +1182,9 @@ IRAM_ATTR inline void QuickReset_HostMAIN()
 
     // hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+
+    if (rsck_data_out_enabled)
+        GPSPI3.slave.rsck_data_out = true;
 }
 
 // A qucker version of quickreset
@@ -1207,6 +1224,9 @@ IRAM_ATTR inline void QuickerReset_HostMAIN()
 
     // hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+
+    if (rsck_data_out_enabled)
+        GPSPI3.slave.rsck_data_out = true;
 }
 
 // Split version of QuickerReset for deferred outlink selection
@@ -1225,6 +1245,9 @@ IRAM_ATTR inline void QuickerReset_HostMAIN_Finalize(uint32_t outlink)
     *gdma_channel_txChan_hostMAIN_out_link_val = outlink;
     // Configure DMA
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
+
+    if (rsck_data_out_enabled)
+        GPSPI3.slave.rsck_data_out = true;
 }
 
 // Get the default outlink value (for ping response etc)
@@ -1421,6 +1444,9 @@ IRAM_ATTR void QuickReset(uint32_t whichHost)
     // works without
     // 2023 note: no it doesn't.
     // spi_slave_hal_user_start(hal);
+
+    if (rsck_data_out_enabled)
+        GPSPI3.slave.rsck_data_out = true;
 }
 
 uint32_t GetHalRXBufferPtr(uint32_t whichHost)

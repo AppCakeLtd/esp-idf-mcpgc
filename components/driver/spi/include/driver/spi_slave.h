@@ -214,6 +214,11 @@ lldesc_t* GetTxDescriptor_HostMAIN();
 // Create outlink from DMA descriptor address (descriptor must be set up first)
 uint32_t CreateOutlinkFromDescriptor(void* dmadesc_addr);
 
+// Conditional MISO timing for FPGA passthrough compensation.
+// When enabled, outputs MISO half a clock earlier (rsck_data_out).
+// Call with true before MMCE block transfers, false when done.
+void SetRsckDataOut(bool enabled);
+
 // Direct register pointers for maximum speed (bypass function call)
 volatile uint32_t* Get_OutlinkRegPtr_HostMAIN();
 volatile uint32_t* Get_DmaConfRegPtr_HostMAIN();

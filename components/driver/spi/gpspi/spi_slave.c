@@ -1094,8 +1094,12 @@ IRAM_ATTR void SpiSlaveSendLite(uint32_t whichHost)
     // bits 31 & 29 (dma_afifo_rst & rx_afifo_rst) <-- this is correct, idk about the third one
     activeHal->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
 
-    if (rsck_data_out_enabled)
-        GPSPI3.slave.rsck_data_out = true;
+    // NOTE: rsck_data_out is now managed exclusively by SetRsckDataOut()
+    // from the MMCE access-mode handler. Defensive re-writes were removed
+    // because they added RMW time to the fast-path reset, pushing the
+    // reset past one SCK period at 27.5 MHz and causing bit-shift
+    // corruption on the first data-phase edge. See
+    // project_4bit_shift_investigation in memory.
 
     // shared
 
@@ -1120,6 +1124,7 @@ static volatile uint32_t *gdma_channel_txChan_hostMAIN_out_conf0_val = NULL;
 static volatile uint32_t *gdma_channel_txChan_hostMAIN_out_link_val = NULL;
 static volatile uint32_t *hal_hostMAIN_dma_out_dma_conf_val = NULL;
 static lldesc_t *dmadesc_tx_hostMAIN = NULL;
+static lldesc_t *dmadesc_rx_hostMAIN = NULL;
 
 void CacheValues_HostMAIN()
 {
@@ -1144,6 +1149,7 @@ void CacheValues_HostMAIN()
     gdma_channel_txChan_hostMAIN_out_link_val = &GDMA.channel[txChan_hostMAIN].out.link.val;
     hal_hostMAIN_dma_out_dma_conf_val = &hal_hostMAIN->dma_out->dma_conf.val;
     dmadesc_tx_hostMAIN = hal_hostMAIN->dmadesc_tx;
+    dmadesc_rx_hostMAIN = hal_hostMAIN->dmadesc_rx;
 }
 
 // overkill but it avoids us having to do a bunch of array lookups
@@ -1164,6 +1170,15 @@ IRAM_ATTR inline void QuickReset_HostMAIN()
     // hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     *hal_hostMAIN_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
+    // Reset RX descriptor so DMA re-owns it for the next transaction.
+    // Symmetric to the TX fix; without this the descriptor stays owner=0
+    // after an EOF and new bytes are silently dropped, leaving the
+    // previous packet's bytes in rx_buffer.
+    // length=0 empirically outperforms length=size here — length=size
+    // destabilizes the mid-transaction QuickReset path used by 0x52.
+    dmadesc_rx_hostMAIN->owner = 1;
+    dmadesc_rx_hostMAIN->length = 0;
+
     // GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
     *gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN; // inLink[HOST_MAIN];
 
@@ -1183,8 +1198,7 @@ IRAM_ATTR inline void QuickReset_HostMAIN()
     // hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
-    if (rsck_data_out_enabled)
-        GPSPI3.slave.rsck_data_out = true;
+    // rsck_data_out now managed exclusively by SetRsckDataOut()
 }
 
 // A qucker version of quickreset
@@ -1225,8 +1239,7 @@ IRAM_ATTR inline void QuickerReset_HostMAIN()
     // hal_hostMAIN->dma_out->dma_conf.val = 0b10111000000000000000000000000011;
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
-    if (rsck_data_out_enabled)
-        GPSPI3.slave.rsck_data_out = true;
+    // rsck_data_out now managed exclusively by SetRsckDataOut()
 }
 
 // Split version of QuickerReset for deferred outlink selection
@@ -1246,8 +1259,7 @@ IRAM_ATTR inline void QuickerReset_HostMAIN_Finalize(uint32_t outlink)
     // Configure DMA
     *hal_hostMAIN_dma_out_dma_conf_val = 0b10111000000000000000000000000011;
 
-    if (rsck_data_out_enabled)
-        GPSPI3.slave.rsck_data_out = true;
+    // rsck_data_out now managed exclusively by SetRsckDataOut()
 }
 
 // Get the default outlink value (for ping response etc)
@@ -1347,6 +1359,12 @@ IRAM_ATTR void QuickReset(uint32_t whichHost)
     // X works without, but will not clear the trans_done flag
     activeHal->dma_in->dma_int_clr.val = 0xFFFFFFFF;
 
+    // Reset RX descriptor so DMA re-owns it for the next transaction.
+    // Symmetric to the TX fix; without this the descriptor stays owner=0
+    // after an EOF and new bytes are silently dropped.
+    activeHal->dmadesc_rx[0].owner = 1;
+    activeHal->dmadesc_rx[0].length = 0;
+
     // 140ns vs 145ns
     // Moved to one-time init
     // spi_ll_dma_rx_enable(hal->hw, 1);
@@ -1445,8 +1463,7 @@ IRAM_ATTR void QuickReset(uint32_t whichHost)
     // 2023 note: no it doesn't.
     // spi_slave_hal_user_start(hal);
 
-    if (rsck_data_out_enabled)
-        GPSPI3.slave.rsck_data_out = true;
+    // rsck_data_out now managed exclusively by SetRsckDataOut()
 }
 
 uint32_t GetHalRXBufferPtr(uint32_t whichHost)

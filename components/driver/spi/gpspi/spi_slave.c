@@ -1125,6 +1125,11 @@ static volatile uint32_t *gdma_channel_txChan_hostMAIN_out_link_val = NULL;
 static volatile uint32_t *hal_hostMAIN_dma_out_dma_conf_val = NULL;
 static lldesc_t *dmadesc_tx_hostMAIN = NULL;
 static lldesc_t *dmadesc_rx_hostMAIN = NULL;
+// Pre-computed first-word value for RX descriptor re-arm.
+// Layout: size[11:0] | length[23:12] | offset[28:24] | sosf[29] | eof[30] | owner[31]
+// Values: size=<preserved>, length=0, offset=0, sosf=0, eof=1, owner=1 = 0xC0000000 | size
+static volatile uint32_t *dmadesc_rx_hostMAIN_word0 = NULL;
+static uint32_t rx_desc_rearm_word0 = 0;
 
 void CacheValues_HostMAIN()
 {
@@ -1150,6 +1155,10 @@ void CacheValues_HostMAIN()
     hal_hostMAIN_dma_out_dma_conf_val = &hal_hostMAIN->dma_out->dma_conf.val;
     dmadesc_tx_hostMAIN = hal_hostMAIN->dmadesc_tx;
     dmadesc_rx_hostMAIN = hal_hostMAIN->dmadesc_rx;
+
+    // Pre-compute the RX descriptor re-arm word once so QuickReset is a single store.
+    dmadesc_rx_hostMAIN_word0 = (volatile uint32_t *)dmadesc_rx_hostMAIN;
+    rx_desc_rearm_word0 = 0xC0000000u | (dmadesc_rx_hostMAIN->size & 0xFFFu);
 }
 
 // overkill but it avoids us having to do a bunch of array lookups
@@ -1170,14 +1179,11 @@ IRAM_ATTR inline void QuickReset_HostMAIN()
     // hal_hostMAIN->dma_in->dma_int_clr.val = 0xFFFFFFFF;
     *hal_hostMAIN_dma_in_dma_int_clr_val = 0xFFFFFFFF;
 
-    // Reset RX descriptor so DMA re-owns it for the next transaction.
-    // Symmetric to the TX fix; without this the descriptor stays owner=0
-    // after an EOF and new bytes are silently dropped, leaving the
-    // previous packet's bytes in rx_buffer.
-    // length=0 empirically outperforms length=size here — length=size
-    // destabilizes the mid-transaction QuickReset path used by 0x52.
-    dmadesc_rx_hostMAIN->owner = 1;
-    dmadesc_rx_hostMAIN->length = 0;
+    // Single 32-bit store to re-arm the RX descriptor: owner=1, length=0,
+    // eof=1, size preserved. Avoids the two read-modify-write cycles the
+    // bit-field form would generate — every nanosecond in this path pushes
+    // the reset closer to the next CS edge.
+    *dmadesc_rx_hostMAIN_word0 = rx_desc_rearm_word0;
 
     // GDMA.channel[rxChan_hostMAIN].in.link.val = inlink_hostMAIN;//[HOST_MAIN];
     *gdma_channel_rxChan_hostMAIN_in_link_val = inlink_hostMAIN; // inLink[HOST_MAIN];

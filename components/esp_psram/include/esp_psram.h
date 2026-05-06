@@ -12,35 +12,45 @@
 #include "esp_err.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/**
- * @brief Initialize PSRAM interface/hardware.
- * Initializes the PSRAM hardware and load the XIP segments or maps the PSRAM memory
- *
- * @return
- *        - ESP_OK:                On success
- *        - ESP_FAIL:              PSRAM isn't initialized successfully, potential reason would be: wrong VDDSDIO, invalid chip ID, etc.
- *        - ESP_ERR_INVALID_STATE: PSRAM is initialized already
- */
-esp_err_t esp_psram_init(void);
+  /**
+   * @brief Initialize PSRAM interface/hardware.
+   * Initializes the PSRAM hardware and load the XIP segments or maps the PSRAM memory
+   *
+   * @return
+   *        - ESP_OK:                On success
+   *        - ESP_FAIL:              PSRAM isn't initialized successfully, potential reason would be: wrong VDDSDIO, invalid chip ID, etc.
+   *        - ESP_ERR_INVALID_STATE: PSRAM is initialized already
+   */
+  esp_err_t esp_psram_init(void);
 
-/**
- * @brief If PSRAM has been initialized
- *
- * @return
- *          - true:  PSRAM has been initialized successfully
- *          - false: PSRAM hasn't been initialized or initialized failed
- */
-bool esp_psram_is_initialized(void);
+  /**
+   * @brief If PSRAM has been initialized
+   *
+   * @return
+   *          - true:  PSRAM has been initialized successfully
+   *          - false: PSRAM hasn't been initialized or initialized failed
+   */
+  bool esp_psram_is_initialized(void);
 
-/**
- * @brief Get the available size of the attached PSRAM chip
- *
- * @return Size in bytes, or 0 if PSRAM isn't successfully initialized
- */
-size_t esp_psram_get_size(void);
+  /**
+   * @brief Get the available size of the attached PSRAM chip
+   *
+   * @return Size in bytes, or 0 if PSRAM isn't successfully initialized
+   */
+  size_t esp_psram_get_size(void);
+
+  // <MOD>
+  /**
+   * @brief returns the start of the psram addr range
+   *
+   * @return uint32_t
+   */
+  uint32_t GetPSRAMStartAddr();
+  // </MOD>
 
 #ifdef __cplusplus
 }

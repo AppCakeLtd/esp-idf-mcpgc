@@ -8,16 +8,17 @@
 #define __ESP_ATTR_H__
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "sdkconfig.h"
 
 #define ROMFN_ATTR
 
-//Normally, the linker script will put all code and rodata in flash,
-//and all variables in shared RAM. These macros can be used to redirect
-//particular functions/variables to other memory regions.
+// Normally, the linker script will put all code and rodata in flash,
+// and all variables in shared RAM. These macros can be used to redirect
+// particular functions/variables to other memory regions.
 
 // Places code into IRAM instead of flash
 #define IRAM_ATTR _SECTION_ATTR_IMPL(".iram1", __COUNTER__)
@@ -38,9 +39,9 @@ extern "C" {
 #define SPM_DRAM_ATTR _SECTION_ATTR_IMPL(".spm.data", __COUNTER__)
 
 // Deprecated macros for TCM (SPM)
-#define TCM_IRAM_ATTR _SECTION_ATTR_IMPL(".spm.text", __COUNTER__) _Pragma ("GCC warning \"'TCM_IRAM_ATTR' macro is deprecated, please use `SPM_IRAM_ATTR`\"")
-#define FORCE_TCM_IRAM_ATTR _SECTION_FORCE_ATTR_IMPL(".spm.text", __COUNTER__) _Pragma ("GCC warning \"'FORCE_TCM_IRAM_ATTR' macro is deprecated, please use `FORCE_SPM_IRAM_ATTR`\"")
-#define TCM_DRAM_ATTR _SECTION_ATTR_IMPL(".spm.data", __COUNTER__) _Pragma ("GCC warning \"'TCM_DRAM_ATTR' macro is deprecated, please use `SPM_DRAM_ATTR`\"")
+#define TCM_IRAM_ATTR _SECTION_ATTR_IMPL(".spm.text", __COUNTER__) _Pragma("GCC warning \"'TCM_IRAM_ATTR' macro is deprecated, please use `SPM_IRAM_ATTR`\"")
+#define FORCE_TCM_IRAM_ATTR _SECTION_FORCE_ATTR_IMPL(".spm.text", __COUNTER__) _Pragma("GCC warning \"'FORCE_TCM_IRAM_ATTR' macro is deprecated, please use `FORCE_SPM_IRAM_ATTR`\"")
+#define TCM_DRAM_ATTR _SECTION_ATTR_IMPL(".spm.data", __COUNTER__) _Pragma("GCC warning \"'TCM_DRAM_ATTR' macro is deprecated, please use `SPM_DRAM_ATTR`\"")
 
 // Forces data to be removed from the final binary but keeps it in the ELF file
 #define NOLOAD_ATTR _SECTION_ATTR_IMPL(".noload_keep_in_elf", __COUNTER__)
@@ -74,7 +75,7 @@ extern "C" {
 // Forces data to be placed to DMA-capable places
 #define DMA_ATTR WORD_ALIGNED_ATTR DRAM_ATTR
 
-//Force data to be placed in DRAM and aligned according to DMA and cache's requirement
+// Force data to be placed in DRAM and aligned according to DMA and cache's requirement
 #if CONFIG_SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
 #define DRAM_DMA_ALIGNED_ATTR __attribute__((aligned(CONFIG_CACHE_L1_CACHE_LINE_SIZE))) DRAM_ATTR
 #else
@@ -89,7 +90,7 @@ extern "C" {
 
 // Forces a string into DRAM instead of flash
 // Use as esp_rom_printf(DRAM_STR("Hello world!\n"));
-#define DRAM_STR(str) (__extension__({static const DRAM_ATTR char __c[] = (str); (const char *)&__c;}))
+#define DRAM_STR(str) (__extension__({static const DRAM_ATTR char __c[] = (str); (const char *)&__c; }))
 
 #if CONFIG_SOC_RTC_FAST_MEM_SUPPORTED || CONFIG_SOC_RTC_SLOW_MEM_SUPPORTED
 // Forces data into RTC memory. See "docs/deep-sleep-stub.rst"
@@ -100,7 +101,7 @@ extern "C" {
 // Forces data into RTC memory of .noinit section.
 // Any variable marked with this attribute will keep its value
 // after restart or during a deep sleep / wake cycle.
-#define RTC_NOINIT_ATTR  _SECTION_ATTR_IMPL(".rtc_noinit", __COUNTER__)
+#define RTC_NOINIT_ATTR _SECTION_ATTR_IMPL(".rtc_noinit", __COUNTER__)
 
 // Forces read-only data into RTC memory. See "docs/deep-sleep-stub.rst"
 #define RTC_RODATA_ATTR _SECTION_ATTR_IMPL(".rtc.rodata", __COUNTER__)
@@ -142,9 +143,9 @@ extern "C" {
  */
 #if CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY
 // Forces bss variable into external memory. "
-#define EXT_RAM_ATTR _SECTION_ATTR_IMPL(".ext_ram.bss", __COUNTER__) _Pragma ("GCC warning \"'EXT_RAM_ATTR' macro is deprecated, please use `EXT_RAM_BSS_ATTR`\"")
+#define EXT_RAM_ATTR _SECTION_ATTR_IMPL(".ext_ram.bss", __COUNTER__) _Pragma("GCC warning \"'EXT_RAM_ATTR' macro is deprecated, please use `EXT_RAM_BSS_ATTR`\"")
 #else
-#define EXT_RAM_ATTR _Pragma ("GCC warning \"'EXT_RAM_ATTR' macro is deprecated, please use `EXT_RAM_BSS_ATTR`\"")
+#define EXT_RAM_ATTR _Pragma("GCC warning \"'EXT_RAM_ATTR' macro is deprecated, please use `EXT_RAM_BSS_ATTR`\"")
 #endif
 
 // Forces data into noinit section to avoid initialization after restart.
@@ -171,18 +172,38 @@ extern "C" {
 #ifdef __cplusplus
 
 // Inline is required here to avoid multiple definition error in linker
-#define FLAG_ATTR_IMPL(TYPE, INT_TYPE) \
-FORCE_INLINE_ATTR constexpr TYPE operator~ (TYPE a) { return (TYPE)~(INT_TYPE)a; } \
-FORCE_INLINE_ATTR constexpr TYPE operator| (TYPE a, TYPE b) { return (TYPE)((INT_TYPE)a | (INT_TYPE)b); } \
-FORCE_INLINE_ATTR constexpr TYPE operator& (TYPE a, TYPE b) { return (TYPE)((INT_TYPE)a & (INT_TYPE)b); } \
-FORCE_INLINE_ATTR constexpr TYPE operator^ (TYPE a, TYPE b) { return (TYPE)((INT_TYPE)a ^ (INT_TYPE)b); } \
-FORCE_INLINE_ATTR constexpr TYPE operator>> (TYPE a, int b) { return (TYPE)((INT_TYPE)a >> b); } \
-FORCE_INLINE_ATTR constexpr TYPE operator<< (TYPE a, int b) { return (TYPE)((INT_TYPE)a << b); } \
-FORCE_INLINE_ATTR TYPE& operator|=(TYPE& a, TYPE b) { a = a | b; return a; } \
-FORCE_INLINE_ATTR TYPE& operator&=(TYPE& a, TYPE b) { a = a & b; return a; } \
-FORCE_INLINE_ATTR TYPE& operator^=(TYPE& a, TYPE b) { a = a ^ b; return a; } \
-FORCE_INLINE_ATTR TYPE& operator>>=(TYPE& a, int b) { a = a >> b; return a; } \
-FORCE_INLINE_ATTR TYPE& operator<<=(TYPE& a, int b) { a = a << b; return a; }
+#define FLAG_ATTR_IMPL(TYPE, INT_TYPE)                                                                      \
+   FORCE_INLINE_ATTR constexpr TYPE operator~(TYPE a) { return (TYPE) ~(INT_TYPE)a; }                       \
+   FORCE_INLINE_ATTR constexpr TYPE operator|(TYPE a, TYPE b) { return (TYPE)((INT_TYPE)a | (INT_TYPE)b); } \
+   FORCE_INLINE_ATTR constexpr TYPE operator&(TYPE a, TYPE b) { return (TYPE)((INT_TYPE)a & (INT_TYPE)b); } \
+   FORCE_INLINE_ATTR constexpr TYPE operator^(TYPE a, TYPE b) { return (TYPE)((INT_TYPE)a ^ (INT_TYPE)b); } \
+   FORCE_INLINE_ATTR constexpr TYPE operator>>(TYPE a, int b) { return (TYPE)((INT_TYPE)a >> b); }          \
+   FORCE_INLINE_ATTR constexpr TYPE operator<<(TYPE a, int b) { return (TYPE)((INT_TYPE)a << b); }          \
+   FORCE_INLINE_ATTR TYPE &operator|=(TYPE &a, TYPE b)                                                      \
+   {                                                                                                        \
+      a = a | b;                                                                                            \
+      return a;                                                                                             \
+   }                                                                                                        \
+   FORCE_INLINE_ATTR TYPE &operator&=(TYPE &a, TYPE b)                                                      \
+   {                                                                                                        \
+      a = a & b;                                                                                            \
+      return a;                                                                                             \
+   }                                                                                                        \
+   FORCE_INLINE_ATTR TYPE &operator^=(TYPE &a, TYPE b)                                                      \
+   {                                                                                                        \
+      a = a ^ b;                                                                                            \
+      return a;                                                                                             \
+   }                                                                                                        \
+   FORCE_INLINE_ATTR TYPE &operator>>=(TYPE &a, int b)                                                      \
+   {                                                                                                        \
+      a = a >> b;                                                                                           \
+      return a;                                                                                             \
+   }                                                                                                        \
+   FORCE_INLINE_ATTR TYPE &operator<<=(TYPE &a, int b)                                                      \
+   {                                                                                                        \
+      a = a << b;                                                                                           \
+      return a;                                                                                             \
+   }
 
 #define FLAG_ATTR_U32(TYPE) FLAG_ATTR_IMPL(TYPE, uint32_t)
 #define FLAG_ATTR FLAG_ATTR_U32
